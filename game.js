@@ -2,7 +2,7 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const tileSize = 30;
-const speed = 3;
+const baseSpeed = 3;
 
 // State Game
 let gameState = "START"; 
@@ -18,40 +18,88 @@ let traps = [];
 const pacmanImg = new Image();
 pacmanImg.src = "foto-saya.png";
 
-// Matriks Master Labirin Rapi Klasik (25 Kolom x 23 Baris)
+// Matriks Master Labirin Klasik (25 Kolom x 23 Baris)
+// 1: Dinding, 0/2: Jalur Jalan
 const masterMap = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,3,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,3,1],
-  [1,0,1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1],
-  [1,0,1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,0,1],
-  [1,0,0,0,0,0,1,0,0,0,0,1,2,1,0,0,0,0,1,0,0,0,0,0,1],
-  [1,1,1,1,1,0,1,1,1,1,0,1,2,1,0,1,1,1,1,0,1,1,1,1,1],
-  [2,2,2,2,1,0,1,2,2,2,2,2,2,2,2,2,2,2,1,0,1,2,2,2,2],
-  [1,1,1,1,1,0,1,2,1,1,1,2,2,2,1,1,1,2,1,0,1,1,1,1,1],
-  [1,2,2,2,2,0,2,2,1,2,2,2,2,2,2,2,1,2,2,0,2,2,2,2,1],
-  [1,1,1,1,1,0,1,2,1,1,1,1,1,1,1,1,1,2,1,0,1,1,1,1,1],
-  [2,2,2,2,1,0,1,2,2,2,2,2,2,2,2,2,2,2,1,0,1,2,2,2,2],
-  [1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1],
-  [1,3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,3,1],
-  [1,1,0,0,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,0,0,1,1],
-  [1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1],
-  [1,0,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,2,1,1,1,1,2,1,2,1,2,1,1,1,1,2,1,1,1,2,1],
+  [1,2,1,1,1,2,1,1,1,1,2,1,2,1,2,1,1,1,1,2,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,2,1,2,1,1,1,2,1],
+  [1,2,2,2,2,2,1,2,2,2,2,1,2,1,2,2,2,2,1,2,2,2,2,2,1],
+  [1,1,1,1,1,2,1,1,1,1,2,1,2,1,2,1,1,1,1,2,1,1,1,1,1],
+  [2,2,2,2,1,2,1,2,2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2],
+  [1,1,1,1,1,2,1,2,1,1,1,2,2,2,1,1,1,2,1,2,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,1],
+  [1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,2,1,2,1,1,1,1,1],
+  [2,2,2,2,1,2,1,2,2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2],
+  [1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,2,1,2,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,2,1,1,1,1,2,1,2,1,2,1,1,1,1,2,1,1,1,2,1],
+  [1,2,2,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,1],
+  [1,1,2,2,1,2,1,2,1,1,1,1,1,1,1,1,1,2,1,2,1,2,2,1,1],
+  [1,2,2,2,2,2,1,2,2,2,2,1,2,1,2,2,2,2,1,2,2,2,2,2,1],
+  [1,2,1,1,1,1,1,1,1,1,2,1,2,1,2,1,1,1,1,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
-
-let map = JSON.parse(JSON.stringify(masterMap));
-let fruit = { x: 12, y: 10, active: false, timer: null };
 
 // Portal Wormhole
 const portals = [
   { x: 1, y: 10, targetX: 23, targetY: 10, color: "#00FFFF" }, 
   { x: 23, y: 10, targetX: 1, targetY: 10, color: "#FF00FF" }  
 ];
+
+let map = [];
+let fruit = { x: 12, y: 10, active: false, timer: null };
+
+// --- FUNGSI RANDOMIZE PENEMPATAN POIN (PELLETS & POWER PELLETS) ---
+function generateRandomizedMap() {
+  let newMap = JSON.parse(JSON.stringify(masterMap));
+  let validPathTiles = [];
+
+  // Kumpulkan semua titik koordinat lorong yang aman untuk diisi poin
+  for (let r = 0; r < newMap.length; r++) {
+    for (let c = 0; c < newMap[r].length; c++) {
+      if (newMap[r][c] !== 1) { // Bukan Dinding
+        // Pengecualian: Kandang hantu, area spawn Pacman, dan lokasi portal
+        const isGhostHouse = (r >= 8 && r <= 11 && c >= 10 && c <= 14);
+        const isPacmanSpawn = (r === 16 && c === 12);
+        const isPortal = portals.some(p => p.x === c && p.y === r);
+
+        if (!isGhostHouse && !isPacmanSpawn && !isPortal) {
+          validPathTiles.push({ r, c });
+          newMap[r][c] = 2; // Kosongkan dulu
+        }
+      }
+    }
+  }
+
+  // Acak urutan koordinat lorong (Fisher-Yates Shuffle)
+  for (let i = validPathTiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [validPathTiles[i], validPathTiles[j]] = [validPathTiles[j], validPathTiles[i]];
+  }
+
+  // Taruh 4 Power Pellets di titik acak terdepan
+  for (let i = 0; i < 4 && i < validPathTiles.length; i++) {
+    const tile = validPathTiles[i];
+    newMap[tile.r][tile.c] = 3; // 3 = Power Pellet
+  }
+
+  // Sisa titik lorong diisi Pellet biasa secara acak (sekitar 85% lorong terisi poin)
+  const totalPellets = Math.floor((validPathTiles.length - 4) * 0.85);
+  for (let i = 4; i < 4 + totalPellets && i < validPathTiles.length; i++) {
+    const tile = validPathTiles[i];
+    newMap[tile.r][tile.c] = 0; // 0 = Regular Pellet
+  }
+
+  return newMap;
+}
+
+// Inisialisasi Matriks Awal
+map = generateRandomizedMap();
 
 // --- CLASS TEKS SKOR MELAYANG ---
 class FloatingText {
@@ -179,16 +227,19 @@ function playSound(type) {
   }
 }
 
-function isCentered(x, y) { return x % tileSize === 0 && y % tileSize === 0; }
-
-function canMove(x, y, dirX, dirY) {
-  const nextGridX = Math.floor(x / tileSize) + dirX;
-  const nextGridY = Math.floor(y / tileSize) + dirY;
-  if (nextGridX < 0 || nextGridX >= map[0].length) return true;
-  if (map[nextGridY] && map[nextGridY][nextGridX] !== undefined) {
-    return map[nextGridY][nextGridX] !== 1;
+function isTilePassable(gridX, gridY) {
+  if (gridX < 0 || gridX >= map[0].length) return true;
+  if (map[gridY] !== undefined && map[gridY][gridX] !== undefined) {
+    return map[gridY][gridX] !== 1;
   }
   return false;
+}
+
+function clampTarget(target) {
+  return {
+    x: Math.max(0, Math.min(map[0].length - 1, target.x)),
+    y: Math.max(0, Math.min(map.length - 1, target.y))
+  };
 }
 
 // --- PAC-MAN CLASS ---
@@ -220,8 +271,8 @@ class Pacman {
 
   dropOilTrap() {
     if (this.trapCount > 0 && gameState === "PLAYING") {
-      const gridX = Math.floor((this.x + tileSize / 2) / tileSize);
-      const gridY = Math.floor((this.y + tileSize / 2) / tileSize);
+      const gridX = Math.round(this.x / tileSize);
+      const gridY = Math.round(this.y / tileSize);
       traps.push({ x: gridX, y: gridY });
       this.trapCount--;
       playSound("trap");
@@ -232,11 +283,15 @@ class Pacman {
   update() {
     if (this.portalCooldown > 0) this.portalCooldown--;
 
-    if (isCentered(this.x, this.y)) {
-      const currentGridX = this.x / tileSize;
-      const currentGridY = this.y / tileSize;
+    const currentGridX = Math.round(this.x / tileSize);
+    const currentGridY = Math.round(this.y / tileSize);
+    const isAtCenter = Math.abs(this.x - currentGridX * tileSize) < baseSpeed &&
+                       Math.abs(this.y - currentGridY * tileSize) < baseSpeed;
 
-      // Teleportasi Wormhole
+    if (isAtCenter) {
+      this.x = currentGridX * tileSize;
+      this.y = currentGridY * tileSize;
+
       if (this.portalCooldown === 0) {
         portals.forEach(p => {
           if (p.x === currentGridX && p.y === currentGridY) {
@@ -276,17 +331,17 @@ class Pacman {
         }
       }
 
-      if (canMove(this.x, this.y, this.nextDirX, this.nextDirY)) {
+      if (isTilePassable(currentGridX + this.nextDirX, currentGridY + this.nextDirY)) {
         this.dirX = this.nextDirX;
         this.dirY = this.nextDirY;
-      } else if (!canMove(this.x, this.y, this.dirX, this.dirY)) {
+      } else if (!isTilePassable(currentGridX + this.dirX, currentGridY + this.dirY)) {
         this.dirX = 0;
         this.dirY = 0;
       }
     }
 
-    this.x += this.dirX * speed;
-    this.y += this.dirY * speed;
+    this.x += this.dirX * baseSpeed;
+    this.y += this.dirY * baseSpeed;
 
     if (this.x < -tileSize / 2) this.x = (map[0].length - 1) * tileSize;
     if (this.x > (map[0].length - 1) * tileSize) this.x = 0;
@@ -345,32 +400,43 @@ class Ghost {
   }
 
   getTarget(pacman, blinkyX, blinkyY) {
-    const pGridX = Math.floor(pacman.x / tileSize);
-    const pGridY = Math.floor(pacman.y / tileSize);
+    const pGridX = Math.round(pacman.x / tileSize);
+    const pGridY = Math.round(pacman.y / tileSize);
 
-    if (this.name === "blinky") return { x: pGridX, y: pGridY };
-    if (this.name === "pinky") return { x: pGridX + pacman.dirX * 4, y: pGridY + pacman.dirY * 4 };
-    if (this.name === "inky") {
+    let rawTarget = { x: pGridX, y: pGridY };
+
+    if (this.name === "blinky") {
+      rawTarget = { x: pGridX, y: pGridY };
+    } else if (this.name === "pinky") {
+      rawTarget = { x: pGridX + pacman.dirX * 4, y: pGridY + pacman.dirY * 4 };
+    } else if (this.name === "inky") {
       const aheadX = pGridX + pacman.dirX * 2;
       const aheadY = pGridY + pacman.dirY * 2;
-      const bGridX = Math.floor(blinkyX / tileSize);
-      const bGridY = Math.floor(blinkyY / tileSize);
-      return { x: aheadX + (aheadX - bGridX), y: aheadY + (aheadY - bGridY) };
+      const bGridX = Math.round(blinkyX / tileSize);
+      const bGridY = Math.round(blinkyY / tileSize);
+      rawTarget = { x: aheadX + (aheadX - bGridX), y: aheadY + (aheadY - bGridY) };
+    } else if (this.name === "clyde") {
+      const dist = Math.hypot(Math.round(this.x / tileSize) - pGridX, Math.round(this.y / tileSize) - pGridY);
+      rawTarget = dist > 8 ? { x: pGridX, y: pGridY } : { x: 0, y: masterMap.length - 1 };
     }
-    if (this.name === "clyde") {
-      const dist = Math.hypot(Math.floor(this.x / tileSize) - pGridX, Math.floor(this.y / tileSize) - pGridY);
-      return dist > 8 ? { x: pGridX, y: pGridY } : { x: 0, y: map.length };
-    }
-    return { x: pGridX, y: pGridY };
+
+    return clampTarget(rawTarget);
   }
 
   update(pacman, blinkyX, blinkyY) {
     if (this.isStunned) return;
     if (this.portalCooldown > 0) this.portalCooldown--;
 
-    if (isCentered(this.x, this.y)) {
-      const currentGridX = this.x / tileSize;
-      const currentGridY = this.y / tileSize;
+    const currentSpeed = this.isFrightened ? baseSpeed / 2 : baseSpeed + (level - 1) * 0.2;
+
+    const currentGridX = Math.round(this.x / tileSize);
+    const currentGridY = Math.round(this.y / tileSize);
+    const isAtCenter = Math.abs(this.x - currentGridX * tileSize) < currentSpeed &&
+                       Math.abs(this.y - currentGridY * tileSize) < currentSpeed;
+
+    if (isAtCenter) {
+      this.x = currentGridX * tileSize;
+      this.y = currentGridY * tileSize;
 
       if (this.portalCooldown === 0) {
         portals.forEach(p => {
@@ -403,7 +469,7 @@ class Ghost {
       for (let move of possibleMoves) {
         if (move.dx === -this.dirX && move.dy === -this.dirY) continue;
 
-        if (canMove(this.x, this.y, move.dx, move.dy)) {
+        if (isTilePassable(currentGridX + move.dx, currentGridY + move.dy)) {
           const nextTileX = currentGridX + move.dx;
           const nextTileY = currentGridY + move.dy;
           const dist = Math.hypot(nextTileX - target.x, nextTileY - target.y);
@@ -425,10 +491,14 @@ class Ghost {
       if (bestMove) {
         this.dirX = bestMove.dx;
         this.dirY = bestMove.dy;
+      } else {
+        if (isTilePassable(currentGridX - this.dirX, currentGridY - this.dirY)) {
+          this.dirX = -this.dirX;
+          this.dirY = -this.dirY;
+        }
       }
     }
 
-    const currentSpeed = this.isFrightened ? speed / 2 : speed + (level - 1) * 0.2;
     this.x += this.dirX * currentSpeed;
     this.y += this.dirY * currentSpeed;
   }
@@ -450,13 +520,13 @@ class Ghost {
   }
 }
 
-// Inisialisasi Karakter & Posisi Spawn
+// Inisialisasi Karakter
 const player = new Pacman(12, 16);
 const ghosts = [
-  new Ghost(12, 10, "#FF0000", "blinky"),
+  new Ghost(12, 8,  "#FF0000", "blinky"),
   new Ghost(11, 10, "#FFB8FF", "pinky"),
   new Ghost(13, 10, "#00FFFF", "inky"),
-  new Ghost(12, 9,  "#FFB852", "clyde")
+  new Ghost(12, 10, "#FFB852", "clyde")
 ];
 
 let frightenedTimer = null;
@@ -485,9 +555,10 @@ function checkPelletsLeft() {
     fruit.timer = setTimeout(() => { fruit.active = false; }, 10000);
   }
 
+  // Jikasemua pelet dimakan -> Naik Level dan Acak Posisi Poin Baru!
   if (pelletsCount === 0) {
     level++;
-    map = JSON.parse(JSON.stringify(masterMap));
+    map = generateRandomizedMap();
     player.resetPosition();
     ghosts.forEach(g => g.resetPosition());
   }
@@ -563,7 +634,7 @@ function resetGame() {
   traps = [];
   particles = [];
   floatingTexts = [];
-  map = JSON.parse(JSON.stringify(masterMap));
+  map = generateRandomizedMap(); // Regenerasi poin acak saat reset
   player.resetPosition();
   ghosts.forEach(g => g.resetPosition());
 }
@@ -589,7 +660,6 @@ function drawMap() {
     }
   }
 
-  // Gambar Portal Teleportasi
   portals.forEach(p => {
     ctx.strokeStyle = p.color;
     ctx.lineWidth = 3;
@@ -598,7 +668,6 @@ function drawMap() {
     ctx.stroke();
   });
 
-  // Gambar Jebakan Oli
   traps.forEach(t => {
     ctx.fillStyle = "#111";
     ctx.beginPath();
@@ -609,7 +678,6 @@ function drawMap() {
     ctx.stroke();
   });
 
-  // Gambar Buah Bonus
   if (fruit.active) {
     const fx = fruit.x * tileSize + tileSize / 2;
     const fy = fruit.y * tileSize + tileSize / 2;
@@ -621,7 +689,7 @@ function drawMap() {
   }
 }
 
-// TABRAKAN & COMBO MULTIPLIER
+// TABRAKAN
 function checkCollisions() {
   ghosts.forEach(g => {
     if (g.isStunned) return;
@@ -660,17 +728,17 @@ function checkCollisions() {
 
 function drawUI() {
   ctx.fillStyle = "#FFF";
-  ctx.font = "16px monospace";
-  ctx.fillText(`SCORE: ${player.score}`, 15, 22);
-  ctx.fillText(`HIGH: ${highScore}`, 140, 22);
-  ctx.fillText(`LVL: ${level}`, 270, 22);
+  ctx.font = "bold 15px monospace";
+  ctx.fillText(`SCORE: ${player.score}`, 15, 25);
+  ctx.fillText(`HIGH: ${highScore}`, 135, 25);
+  ctx.fillText(`LVL: ${level}`, 255, 25);
 
   ctx.fillStyle = "#FF8800";
-  ctx.fillText(`TRAPS: ${player.trapCount}`, 360, 22);
+  ctx.fillText(`TRAPS: ${player.trapCount}`, 330, 25);
 
   for (let i = 0; i < player.lives; i++) {
-    const iconX = canvas.width - 30 - i * 28;
-    const iconY = 6;
+    const iconX = canvas.width - 35 - i * 28;
+    const iconY = 10;
     const iconSize = 20;
 
     ctx.save();
@@ -744,7 +812,10 @@ function gameLoop() {
   if (gameState === "PLAYING") {
     player.update();
     const blinky = ghosts.find(g => g.name === "blinky");
-    ghosts.forEach(g => g.update(player, blinky.x, blinky.y));
+    const blinkyX = blinky ? blinky.x : player.x;
+    const blinkyY = blinky ? blinky.y : player.y;
+
+    ghosts.forEach(g => g.update(player, blinkyX, blinkyY));
     checkCollisions();
   }
 

@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pac-Man HTML5 - Random Maze & Traps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pac-Man HTML5 Mobile Responsive</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,6 +11,7 @@
     <h1>PAC-MAN</h1>
     <canvas id="canvas" width="750" height="690"></canvas>
     
+    <!-- Virtual D-Pad untuk Layar HP -->
     <div id="dpad">
       <button class="dbtn" onclick="handleDpad('ArrowUp')">▲</button>
       <div class="dpad-row">
@@ -18,7 +19,6 @@
         <button class="dbtn" onclick="handleDpad('ArrowDown')">▼</button>
         <button class="dbtn" onclick="handleDpad('ArrowRight')">▶</button>
       </div>
-      <!-- Tombol Jebakan untuk Layar HP -->
       <button class="trap-btn" onclick="dropTrap()">DROP TRAP (SHIFT)</button>
     </div>
   </div>
