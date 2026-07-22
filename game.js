@@ -19,7 +19,6 @@ const pacmanImg = new Image();
 pacmanImg.src = "foto-saya.png";
 
 // Matriks Master Labirin Klasik (25 Kolom x 23 Baris)
-// 1: Dinding, 0/2: Jalur Jalan
 const masterMap = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,2,2,2,2,2,2,2,2,2,2,1,2,1,2,2,2,2,2,2,2,2,2,2,1],
@@ -54,54 +53,48 @@ const portals = [
 let map = [];
 let fruit = { x: 12, y: 10, active: false, timer: null };
 
-// --- FUNGSI RANDOMIZE PENEMPATAN POIN (PELLETS & POWER PELLETS) ---
+// Randomize Penempatan Poin
 function generateRandomizedMap() {
   let newMap = JSON.parse(JSON.stringify(masterMap));
   let validPathTiles = [];
 
-  // Kumpulkan semua titik koordinat lorong yang aman untuk diisi poin
   for (let r = 0; r < newMap.length; r++) {
     for (let c = 0; c < newMap[r].length; c++) {
-      if (newMap[r][c] !== 1) { // Bukan Dinding
-        // Pengecualian: Kandang hantu, area spawn Pacman, dan lokasi portal
+      if (newMap[r][c] !== 1) {
         const isGhostHouse = (r >= 8 && r <= 11 && c >= 10 && c <= 14);
         const isPacmanSpawn = (r === 16 && c === 12);
         const isPortal = portals.some(p => p.x === c && p.y === r);
 
         if (!isGhostHouse && !isPacmanSpawn && !isPortal) {
           validPathTiles.push({ r, c });
-          newMap[r][c] = 2; // Kosongkan dulu
+          newMap[r][c] = 2;
         }
       }
     }
   }
 
-  // Acak urutan koordinat lorong (Fisher-Yates Shuffle)
   for (let i = validPathTiles.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [validPathTiles[i], validPathTiles[j]] = [validPathTiles[j], validPathTiles[i]];
   }
 
-  // Taruh 4 Power Pellets di titik acak terdepan
   for (let i = 0; i < 4 && i < validPathTiles.length; i++) {
     const tile = validPathTiles[i];
-    newMap[tile.r][tile.c] = 3; // 3 = Power Pellet
+    newMap[tile.r][tile.c] = 3;
   }
 
-  // Sisa titik lorong diisi Pellet biasa secara acak (sekitar 85% lorong terisi poin)
   const totalPellets = Math.floor((validPathTiles.length - 4) * 0.85);
   for (let i = 4; i < 4 + totalPellets && i < validPathTiles.length; i++) {
     const tile = validPathTiles[i];
-    newMap[tile.r][tile.c] = 0; // 0 = Regular Pellet
+    newMap[tile.r][tile.c] = 0;
   }
 
   return newMap;
 }
 
-// Inisialisasi Matriks Awal
 map = generateRandomizedMap();
 
-// --- CLASS TEKS SKOR MELAYANG ---
+// Floating Text
 class FloatingText {
   constructor(x, y, text, color = "#FFFF00") {
     this.x = x;
@@ -127,7 +120,7 @@ class FloatingText {
   }
 }
 
-// --- CLASS PARTIKEL ---
+// Particle
 class Particle {
   constructor(x, y, color) {
     this.x = x;
@@ -162,7 +155,7 @@ function createBurst(x, y, color, count = 15) {
   }
 }
 
-// --- WEB AUDIO API ---
+// Audio API
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
@@ -227,10 +220,15 @@ function playSound(type) {
   }
 }
 
-function isTilePassable(gridX, gridY) {
+function isTilePassable(gridX, gridY, isGhost = false) {
   if (gridX < 0 || gridX >= map[0].length) return true;
   if (map[gridY] !== undefined && map[gridY][gridX] !== undefined) {
-    return map[gridY][gridX] !== 1;
+    if (map[gridY][gridX] === 1) return false; // Dinding
+    // Jika karakter adalah HANTU, larang melintasi tile portal wormhole
+    if (isGhost && portals.some(p => p.x === gridX && p.y === gridY)) {
+      return false;
+    }
+    return true;
   }
   return false;
 }
@@ -242,7 +240,7 @@ function clampTarget(target) {
   };
 }
 
-// --- PAC-MAN CLASS ---
+// Pacman Class
 class Pacman {
   constructor(gridX, gridY) {
     this.startX = gridX;
@@ -292,6 +290,7 @@ class Pacman {
       this.x = currentGridX * tileSize;
       this.y = currentGridY * tileSize;
 
+      // Teleportasi Wormhole Khusus Pac-Man
       if (this.portalCooldown === 0) {
         portals.forEach(p => {
           if (p.x === currentGridX && p.y === currentGridY) {
@@ -331,10 +330,10 @@ class Pacman {
         }
       }
 
-      if (isTilePassable(currentGridX + this.nextDirX, currentGridY + this.nextDirY)) {
+      if (isTilePassable(currentGridX + this.nextDirX, currentGridY + this.nextDirY, false)) {
         this.dirX = this.nextDirX;
         this.dirY = this.nextDirY;
-      } else if (!isTilePassable(currentGridX + this.dirX, currentGridY + this.dirY)) {
+      } else if (!isTilePassable(currentGridX + this.dirX, currentGridY + this.dirY, false)) {
         this.dirX = 0;
         this.dirY = 0;
       }
@@ -377,7 +376,7 @@ class Pacman {
   }
 }
 
-// --- GHOST CLASS ---
+// Ghost Class (Dilarang Masuk Wormhole)
 class Ghost {
   constructor(gridX, gridY, color, name) {
     this.homeX = gridX * tileSize;
@@ -385,7 +384,6 @@ class Ghost {
     this.baseColor = color;
     this.name = name;
     this.isStunned = false;
-    this.portalCooldown = 0;
     this.resetPosition();
   }
 
@@ -394,7 +392,6 @@ class Ghost {
     this.y = this.homeY;
     this.isFrightened = false;
     this.isStunned = false;
-    this.portalCooldown = 0;
     this.dirX = 0;
     this.dirY = -1;
   }
@@ -425,7 +422,6 @@ class Ghost {
 
   update(pacman, blinkyX, blinkyY) {
     if (this.isStunned) return;
-    if (this.portalCooldown > 0) this.portalCooldown--;
 
     const currentSpeed = this.isFrightened ? baseSpeed / 2 : baseSpeed + (level - 1) * 0.2;
 
@@ -437,16 +433,6 @@ class Ghost {
     if (isAtCenter) {
       this.x = currentGridX * tileSize;
       this.y = currentGridY * tileSize;
-
-      if (this.portalCooldown === 0) {
-        portals.forEach(p => {
-          if (p.x === currentGridX && p.y === currentGridY) {
-            this.x = p.targetX * tileSize;
-            this.y = p.targetY * tileSize;
-            this.portalCooldown = 20;
-          }
-        });
-      }
 
       traps.forEach((trap, index) => {
         if (trap.x === currentGridX && trap.y === currentGridY) {
@@ -469,7 +455,8 @@ class Ghost {
       for (let move of possibleMoves) {
         if (move.dx === -this.dirX && move.dy === -this.dirY) continue;
 
-        if (isTilePassable(currentGridX + move.dx, currentGridY + move.dy)) {
+        // Parameter `isGhost = true` agar hantu menganggap tile portal sebagai Dinding
+        if (isTilePassable(currentGridX + move.dx, currentGridY + move.dy, true)) {
           const nextTileX = currentGridX + move.dx;
           const nextTileY = currentGridY + move.dy;
           const dist = Math.hypot(nextTileX - target.x, nextTileY - target.y);
@@ -492,7 +479,7 @@ class Ghost {
         this.dirX = bestMove.dx;
         this.dirY = bestMove.dy;
       } else {
-        if (isTilePassable(currentGridX - this.dirX, currentGridY - this.dirY)) {
+        if (isTilePassable(currentGridX - this.dirX, currentGridY - this.dirY, true)) {
           this.dirX = -this.dirX;
           this.dirY = -this.dirY;
         }
@@ -555,7 +542,6 @@ function checkPelletsLeft() {
     fruit.timer = setTimeout(() => { fruit.active = false; }, 10000);
   }
 
-  // Jikasemua pelet dimakan -> Naik Level dan Acak Posisi Poin Baru!
   if (pelletsCount === 0) {
     level++;
     map = generateRandomizedMap();
@@ -564,7 +550,7 @@ function checkPelletsLeft() {
   }
 }
 
-// INPUT HANDLERS
+// Input Handlers
 function handleInputKey(key) {
   if (gameState === "START" || gameState === "GAMEOVER") {
     if (key === " " || key === "Enter") {
@@ -598,7 +584,11 @@ window.addEventListener("keydown", (e) => {
 function handleDpad(key) { handleInputKey(key); }
 function dropTrap() { player.dropOilTrap(); }
 
-// TOUCH SWIPE
+// LOCK TOUCH & PREVENT REFRESH ON MOBILE
+window.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
+
 let touchStartX = 0;
 let touchStartY = 0;
 
@@ -610,7 +600,7 @@ canvas.addEventListener("touchstart", (e) => {
     playSound("start");
     gameState = "PLAYING";
   }
-}, { passive: true });
+}, { passive: false });
 
 canvas.addEventListener("touchend", (e) => {
   if (gameState !== "PLAYING") return;
@@ -624,7 +614,7 @@ canvas.addEventListener("touchend", (e) => {
     if (dy > 30) player.setNextDirection(0, 1);
     else if (dy < -30) player.setNextDirection(0, -1);
   }
-}, { passive: true });
+}, { passive: false });
 
 function resetGame() {
   player.lives = 3;
@@ -634,12 +624,12 @@ function resetGame() {
   traps = [];
   particles = [];
   floatingTexts = [];
-  map = generateRandomizedMap(); // Regenerasi poin acak saat reset
+  map = generateRandomizedMap();
   player.resetPosition();
   ghosts.forEach(g => g.resetPosition());
 }
 
-// RENDER MAP, PORTALS, TRAPS, & FRUIT
+// Render Map
 function drawMap() {
   for (let r = 0; r < map.length; r++) {
     for (let c = 0; c < map[r].length; c++) {
@@ -689,7 +679,7 @@ function drawMap() {
   }
 }
 
-// TABRAKAN
+// Tabrakan
 function checkCollisions() {
   ghosts.forEach(g => {
     if (g.isStunned) return;
@@ -796,7 +786,7 @@ function drawOverlays() {
   }
 }
 
-// GAME LOOP UTAMA
+// Loop Game
 function gameLoop() {
   ctx.save();
 

@@ -2,6 +2,19 @@
   box-sizing: border-box;
 }
 
+/* Mengunci Tampilan Layar HP secara Penuh */
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Mencegah Scrollbar */
+  overscroll-behavior: none; /* Mencegah Pull-to-Refresh & Bounce Effect */
+  touch-action: none; /* Mengunci Gestur Default Browser */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 body {
   background-color: #111;
   color: #fff;
@@ -9,10 +22,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  margin: 0;
   padding: 10px;
-  touch-action: manipulation;
 }
 
 #game-container {
@@ -26,11 +36,11 @@ body {
 
 h1 {
   margin: 5px 0;
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: 2px;
 }
 
-/* Canvas Responsif Otomatis */
+/* Canvas Responsif */
 canvas {
   border: 4px solid #0000FF;
   background-color: #000;
@@ -39,11 +49,12 @@ canvas {
   height: auto !important;
   max-width: 750px;
   display: block;
+  touch-action: none;
 }
 
 /* D-Pad untuk HP */
 #dpad {
-  margin-top: 15px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -70,11 +81,7 @@ canvas {
   border-radius: 12px;
   box-shadow: 0 4px 0 #000;
   cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  touch-action: manipulation;
 }
 
 .dbtn:active {
@@ -95,8 +102,7 @@ canvas {
   border: 2px solid #FFF;
   border-radius: 8px;
   cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .trap-btn:active {
